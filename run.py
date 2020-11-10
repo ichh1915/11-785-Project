@@ -16,7 +16,7 @@ def main():
     train_loader = load_data()
     test_loader = load_data(False)
 
-    solver.training(neuralnet=srnet, data_loader=train_loader, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
+    solver.training(neuralnet=srnet, data_loader=train_loader, test_loader=test_loader, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
     solver.validation(neuralnet=srnet, data_loader=test_loader)
 
 if __name__ == '__main__':

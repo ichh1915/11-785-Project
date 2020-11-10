@@ -3,6 +3,7 @@ import os, inspect, time
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import Dataset, DataLoader
 
 PACK_PATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
@@ -34,12 +35,13 @@ def torch2npy(input):
     output = input.detach().numpy()
     return output
 
-def training(neuralnet, data_loader, epochs, batch_size):
+def training(neuralnet, data_loader, test_loader, epochs, batch_size):
 
     start_time = time.time()
     loss_tr = 0
     list_loss = []
     list_psnr = []
+    list_psnr_static = []
 
     makedir(PACK_PATH+"/training")
     makedir(PACK_PATH+"/static")
@@ -47,26 +49,31 @@ def training(neuralnet, data_loader, epochs, batch_size):
 
     print("\nTraining SRCNN to %d epochs" %(epochs))
 
+    writer = SummaryWriter()
+    iteration = 0
+    list_loss = []
+    list_psnr = []
+
     for epoch in range(epochs):
 
         neuralnet.model.train()
         running_loss, running_psnr = 0, 0
 
         for i, (data, label) in enumerate(data_loader):
-            neuralnet.optimizer.zero_grad()
-            data, label = data.cuda(), label.cuda()
+          neuralnet.optimizer.zero_grad()
+          data, label = data.cuda(), label.cuda()
 
-            output = neuralnet.model(data)
-            loss = neuralnet.mse(output, label)
+          output = neuralnet.model(data)
+          loss = neuralnet.mse(output, label)
 
-            running_loss += loss.item()
-            running_psnr += psnr(output, label).item()
+          running_loss += loss.item()
+          running_psnr += psnr(output, label).item()
 
-            loss.backward()
-            neuralnet.optimizer.step()
+          loss.backward()
+          neuralnet.optimizer.step()
 
-            del data, label, output, loss
-            torch.cuda.empty_cache()
+          del data, label, output, loss
+          torch.cuda.empty_cache()
 
         loss_tr = running_loss / len(data_loader)
         psnr_tr = running_psnr / len(data_loader)
@@ -75,6 +82,12 @@ def training(neuralnet, data_loader, epochs, batch_size):
 
         print("Epoch [%d / %d] | Loss: %f  PSNR: %f" %(epoch, epochs, loss_tr, psnr_tr))
         torch.save(neuralnet.model.state_dict(), PACK_PATH+"/runs/params")
+
+        if epoch % 100 == 0:
+          print("\n***** validation @ epoch %d *****" %(epoch))
+          validation(neuralnet, test_loader)
+          print("\n")
+          
 
     print("Final Epcoh | Loss: %f  PSNR: %f" %(loss_tr, psnr_tr))
 
@@ -94,24 +107,24 @@ def validation(neuralnet, data_loader):
     makedir(PACK_PATH+"/test/reconstruction")
 
     start_time = time.time()
-    print("\nValidation")
+
     neuralnet.model.eval()
     running_loss, running_psnr = 0, 0
 
     for i, (data, label) in enumerate(data_loader):
-        data, label = data.cuda(), label.cuda()
+      data, label = data.cuda(), label.cuda()
 
-        output = neuralnet.model(data)
-        loss = neuralnet.mse(output, label)
+      output = neuralnet.model(data)
+      loss = neuralnet.mse(output, label)
 
-        running_loss += loss.item()
-        running_psnr += psnr(output, label).item()
+      running_loss += loss.item()
+      running_psnr += psnr(output, label).item()
 
-        del data, label, output, loss
-        torch.cuda.empty_cache()
+      del data, label, output, loss
+      torch.cuda.empty_cache()
     loss_tr = running_loss / len(data_loader)
     psnr_tr = running_psnr / len(data_loader)
 
     elapsed_time = time.time() - start_time
-    print("Final validation | Loss: %f  PSNR: %f" %(loss_tr, psnr_tr))
-    print("Elapsed: "+str(elapsed_time))
+    print("\t Validation | Loss: %f  PSNR: %f" %(loss_tr, psnr_tr))
+    print("\t Elapsed: "+str(elapsed_time))
