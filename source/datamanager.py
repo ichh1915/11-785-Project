@@ -7,11 +7,11 @@ class DataSet(object):
 
     def __init__(self):
 
-        self.data_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/../dataset"
+        self.data_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
         self.list_train_lr = self.sorted_list(os.path.join(self.data_path, "train_lr", "*.npy"))
         self.list_train_hr = self.sorted_list(os.path.join(self.data_path, "train_hr", "*.npy"))
 
-        self.data_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/../dataset"
+        self.data_path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))+"/.."
         self.list_test_lr = self.sorted_list(os.path.join(self.data_path, "test_lr", "*.npy"))
         self.list_test_hr = self.sorted_list(os.path.join(self.data_path, "test_hr", "*.npy"))
 
