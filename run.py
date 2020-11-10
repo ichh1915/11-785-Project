@@ -4,7 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import torch
 
 import source.neuralnet as nn
-import source.datamanager as dman
+from source.datamanager import load_data
 import source.solver as solver
 
 def main():
@@ -13,10 +13,11 @@ def main():
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
     srnet = nn.NeuralNet(device=device, ngpu=FLAGS.ngpu)
 
-    dataset = dman.DataSet()
+    train_loader = load_data()
+    test_loader = load_data(False)
 
-    solver.training(neuralnet=srnet, dataset=dataset, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
-    solver.validation(neuralnet=srnet, dataset=dataset)
+    solver.training(neuralnet=srnet, data_loader=train_loader, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
+    solver.validation(neuralnet=srnet, data_loader=test_loader)
 
 if __name__ == '__main__':
 
