@@ -53,20 +53,20 @@ def training(neuralnet, data_loader, epochs, batch_size):
         running_loss, running_psnr = 0, 0
 
         for i, (data, label) in enumerate(data_loader):
-          neuralnet.optimizer.zero_grad()
-          data, label = data.cuda(), label.cuda()
+            neuralnet.optimizer.zero_grad()
+            data, label = data.cuda(), label.cuda()
 
-          output = neuralnet.model(data)
-          loss = neuralnet.mse(output, label)
+            output = neuralnet.model(data)
+            loss = neuralnet.mse(output, label)
 
-          running_loss += loss.item()
-          running_psnr += psnr(output, label).item()
+            running_loss += loss.item()
+            running_psnr += psnr(output, label).item()
 
-          loss.backward()
-          neuralnet.optimizer.step()
+            loss.backward()
+            neuralnet.optimizer.step()
 
-          del data, label, output, loss
-          torch.cuda.empty_cache()
+            del data, label, output, loss
+            torch.cuda.empty_cache()
 
         loss_tr = running_loss / len(data_loader)
         psnr_tr = running_psnr / len(data_loader)
@@ -95,22 +95,23 @@ def validation(neuralnet, data_loader):
 
     start_time = time.time()
     print("\nValidation")
-    for tidx in range(dataset.amount_te):
+    neuralnet.model.eval()
+    running_loss, running_psnr = 0, 0
 
-        X_te, Y_te, X_te_t, Y_te_t = dataset.next_test()
-        if(X_te is None): break
+    for i, (data, label) in enumerate(data_loader):
+        data, label = data.cuda(), label.cuda()
 
-        img_recon = neuralnet.model(X_te_t.to(neuralnet.device))
-        tmp_psnr = psnr(input=img_recon.to(neuralnet.device), target=Y_te_t.to(neuralnet.device)).item()
-        img_recon = np.transpose(torch2npy(img_recon.cpu()), (0, 2, 3, 1))
+        output = neuralnet.model(data)
+        loss = neuralnet.mse(output, label)
 
-        img_recon = np.squeeze(img_recon, axis=0)
-        plt.imsave("%s/test/reconstruction/%09d_psnr_%d.png" %(PACK_PATH, tidx, int(tmp_psnr)), img_recon)
+        running_loss += loss.item()
+        running_psnr += psnr(output, label).item()
 
-        img_input = np.squeeze(X_te, axis=0)
-        img_ground = np.squeeze(Y_te, axis=0)
-        plt.imsave("%s/test/bicubic.png" %(PACK_PATH), img_input)
-        plt.imsave("%s/test/high-resolution.png" %(PACK_PATH), img_ground)
+        del data, label, output, loss
+        torch.cuda.empty_cache()
+    loss_tr = running_loss / len(data_loader)
+    psnr_tr = running_psnr / len(data_loader)
 
     elapsed_time = time.time() - start_time
+    print("Final validation | Loss: %f  PSNR: %f" %(loss_tr, psnr_tr))
     print("Elapsed: "+str(elapsed_time))
