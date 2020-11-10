@@ -13,13 +13,13 @@ def makedir(path):
     try: os.mkdir(path)
     except: pass
 
-def save_graph(contents, val_cont, xlabel, ylabel, savename):
+def save_graph(contents, val_cont, val_epoch, xlabel, ylabel, savename):
 
     np.save(savename, np.asarray(contents))
     plt.clf()
     plt.rcParams['font.size'] = 15
     plt.plot(contents, color='blue', linestyle="-", label="train")
-    plt.plot(val_cont, color='red', linestyle="-", label="test")
+    plt.plot(val_epoch, val_cont, color='red', linestyle="-", label="test")
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.legend(loc="upper right")
@@ -44,6 +44,7 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
     list_psnr = []
     list_loss_test = []
     list_psnr_test = []
+    val_epoch = []
 
     makedir(PACK_PATH+"/training")
     makedir(PACK_PATH+"/static")
@@ -78,14 +79,15 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
         list_loss.append(loss_tr)
         list_psnr.append(psnr_tr)
 
-        print("Epoch [%d / %d] | Loss: %f  PSNR: %f" %(epoch, epochs, loss_tr, psnr_tr))
+        print("Epoch [%d / %d] | Loss: %f  PSNR: %f" %(epoch+1, epochs, loss_tr, psnr_tr))
         torch.save(neuralnet.model.state_dict(), PACK_PATH+"/runs/params")
 
-        if epoch % 100 == 0:
+        if epoch % 10 == 9:
           print("\n***** validation @ epoch %d *****" %(epoch))
           loss_val, psnr_val = validation(neuralnet, test_loader)
           list_loss_test.append(loss_val)
           list_psnr_test.append(psnr_val)
+          val_epoch.append(epoch)
           print("\n")
           
 
@@ -94,8 +96,8 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
     elapsed_time = time.time() - start_time
     print("Elapsed: "+str(elapsed_time))
 
-    save_graph(contents=list_loss, val_cont=list_loss_test, xlabel="Iteration", ylabel="L2 loss", savename="loss")
-    save_graph(contents=list_psnr, val_cont=list_psnr_test, xlabel="Iteration", ylabel="PSNR (dB)", savename="psnr")
+    save_graph(contents=list_loss, val_cont=list_loss_test, val_epoch=val_epoch, xlabel="Iteration", ylabel="L2 loss", savename="loss")
+    save_graph(contents=list_psnr, val_cont=list_psnr_test, val_epoch=val_epoch, xlabel="Iteration", ylabel="PSNR (dB)", savename="psnr")
 
 def validation(neuralnet, data_loader):
 
