@@ -13,14 +13,16 @@ def makedir(path):
     try: os.mkdir(path)
     except: pass
 
-def save_graph(contents, xlabel, ylabel, savename):
+def save_graph(contents, val_cont, xlabel, ylabel, savename):
 
     np.save(savename, np.asarray(contents))
     plt.clf()
     plt.rcParams['font.size'] = 15
-    plt.plot(contents, color='blue', linestyle="-", label="loss")
+    plt.plot(contents, color='blue', linestyle="-", label="train")
+    plt.plot(val_cont, color='red', linestyle="-", label="test")
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+    plt.legend(loc="upper right")
     plt.tight_layout(pad=1, w_pad=1, h_pad=1)
     plt.savefig("%s.png" %(savename))
     plt.close()
@@ -38,10 +40,10 @@ def torch2npy(input):
 def training(neuralnet, data_loader, test_loader, epochs, batch_size):
 
     start_time = time.time()
-    loss_tr = 0
     list_loss = []
     list_psnr = []
-    list_psnr_static = []
+    list_loss_test = []
+    list_psnr_test = []
 
     makedir(PACK_PATH+"/training")
     makedir(PACK_PATH+"/static")
@@ -49,10 +51,6 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
 
     print("\nTraining SRCNN to %d epochs" %(epochs))
 
-    writer = SummaryWriter()
-    iteration = 0
-    list_loss = []
-    list_psnr = []
 
     for epoch in range(epochs):
 
@@ -85,7 +83,9 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
 
         if epoch % 100 == 0:
           print("\n***** validation @ epoch %d *****" %(epoch))
-          validation(neuralnet, test_loader)
+          loss_val, psnr_val = validation(neuralnet, test_loader)
+          list_loss_test.append(loss_val)
+          list_psnr_test.append(psnr_val)
           print("\n")
           
 
@@ -94,8 +94,8 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
     elapsed_time = time.time() - start_time
     print("Elapsed: "+str(elapsed_time))
 
-    save_graph(contents=list_loss, xlabel="Iteration", ylabel="L2 loss", savename="loss")
-    save_graph(contents=list_psnr, xlabel="Iteration", ylabel="PSNR (dB)", savename="psnr")
+    save_graph(contents=list_loss, val_cont=list_loss_test, xlabel="Iteration", ylabel="L2 loss", savename="loss")
+    save_graph(contents=list_psnr, val_cont=list_psnr_test, xlabel="Iteration", ylabel="PSNR (dB)", savename="psnr")
 
 def validation(neuralnet, data_loader):
 
@@ -128,3 +128,5 @@ def validation(neuralnet, data_loader):
     elapsed_time = time.time() - start_time
     print("\t Validation | Loss: %f  PSNR: %f" %(loss_tr, psnr_tr))
     print("\t Elapsed: "+str(elapsed_time))
+
+    return loss_tr, psnr_tr
