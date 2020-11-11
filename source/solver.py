@@ -49,7 +49,7 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
     makedir(PACK_PATH+"/training")
     makedir(PACK_PATH+"/static")
     makedir(PACK_PATH+"/static/reconstruction")
-
+    makedir(PACK_PATH+"/runs")
     print("\nTraining SRCNN to %d epochs" %(epochs))
 
 
