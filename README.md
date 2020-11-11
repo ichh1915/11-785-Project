@@ -4,3 +4,6 @@ Urban 100 from  "Single Image Super-Resolution from Transformed Self-Exemplars" 
 
 ## Baseline Model
 "Image Super-Resolution Using Deep Convolutional Networks" PDF: https://ieeexplore.ieee.org/abstract/document/7115171/
+
+
+## Hyper-parameters
