@@ -5,10 +5,15 @@ import torch.optim as optim
 
 class NeuralNet(object):
 
-    def __init__(self, device, ngpu):
+    def __init__(self, device, ngpu, model):
 
         self.device, self.ngpu = device, ngpu
-        self.model = SRNET(self.ngpu).to(self.device)
+
+        if model == 'SRCNN':
+          self.model = SRNET(self.ngpu).to(self.device)
+        elif model == 'FSRCNN':
+          self.model = FSRCNN(self.ngpu).to(self.device)
+
         if (self.device.type == 'cuda') and (self.model.ngpu > 0):
             self.model = nn.DataParallel(self.model, list(range(self.model.ngpu)))
 
@@ -38,3 +43,55 @@ class SRNET(nn.Module):
 
     def forward(self, input):
         return torch.clamp(self.model(input), min=1e-12, max=1-(1e-12))
+
+
+class FSRCNN(torch.nn.Module):
+    def __init__(self, ngpu, n_channels=3, d=56, s=12, m=4):
+        super(FSRCNN, self).__init__()
+
+        self.ngpu = ngpu
+
+        # Feature extraction
+        self.extraction = nn.Sequential(
+            nn.Conv2d(in_channels=n_channels, out_channels=d, kernel_size=5, stride=1, padding=5//2),
+            nn.PReLU())
+
+        # Shrinking
+        self.shrinking = nn.Sequential(nn.Conv2d(in_channels=d, out_channels=s, kernel_size=1, stride=1, padding=0//2),
+                                         nn.PReLU())
+
+        # Non-linear Mapping
+        layers = []
+        for _ in range(m):
+            layers.append(
+                nn.Sequential(nn.Conv2d(in_channels=s, out_channels=s, kernel_size=3, stride=1, padding=3//2),
+                              nn.PReLU()))
+        self.mapping = nn.Sequential(*layers)
+
+        # # Expanding
+        self.expanding = nn.Sequential(nn.Conv2d(in_channels=s, out_channels=d, kernel_size=1, stride=1, padding=1//2),
+                                         nn.PReLU())
+
+
+        # Deconvolution
+        self.deconvolution = nn.ConvTranspose2d(in_channels=d, out_channels=n_channels, kernel_size=9, stride=1, padding=9//2,
+                                            output_padding=0)
+
+    def forward(self, x):
+        out = self.extraction(x)
+        out = self.shrinking(out)
+        out = self.mapping(out)
+        out = self.expanding(out)
+        out = self.deconvolution(out)
+
+        return torch.clamp(out, min=1e-12, max=1-(1e-12))
+
+    # def weight_init(self):
+    #     """
+    #     Initial the weights.
+    #     """
+    #     for m in self.modules():
+    #         if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+    #             m.weight.data.normal_(0.0, sqrt(2 / m.out_channels / m.kernel_size[0] / m.kernel_size[0]))  # MSRA
+    #             if m.bias is not None:
+    #                 m.bias.data.zero_()
