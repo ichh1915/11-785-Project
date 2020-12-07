@@ -85,3 +85,13 @@ class FSRCNN(torch.nn.Module):
         out = self.deconvolution(out)
 
         return torch.clamp(out, min=1e-12, max=1-(1e-12))
+
+    # def weight_init(self):
+    #     """
+    #     Initial the weights.
+    #     """
+    #     for m in self.modules():
+    #         if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
+    #             m.weight.data.normal_(0.0, sqrt(2 / m.out_channels / m.kernel_size[0] / m.kernel_size[0]))  # MSRA
+    #             if m.bias is not None:
+    #                 m.bias.data.zero_()
