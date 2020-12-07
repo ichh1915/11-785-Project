@@ -11,7 +11,7 @@ def main():
 
     if(not(torch.cuda.is_available())): FLAGS.ngpu = 0
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
-    srnet = nn.NeuralNet(device=device, ngpu=FLAGS.ngpu)
+    srnet = nn.NeuralNet(device=device, ngpu=FLAGS.ngpu, model=FLAGS.model)
 
     dataset = dman.DataSet()
 
@@ -24,6 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--ngpu', type=int, default=1, help='-')
     parser.add_argument('--epoch', type=int, default=5000, help='-')
     parser.add_argument('--batch', type=int, default=16, help='-')
+    parser.add_argument('--model', type=str, default='SRCNN', help='-')
 
     FLAGS, unparsed = parser.parse_known_args()
 
