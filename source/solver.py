@@ -83,7 +83,7 @@ def training(neuralnet, data_loader, test_loader, epochs, batch_size):
         torch.save(neuralnet.model.state_dict(), PACK_PATH+"/runs/params")
 
         if epoch % 10 == 9:
-          print("\n***** validation @ epoch %d *****" %(epoch))
+          print("\n***** validation @ epoch %d *****" %(epoch+1))
           loss_val, psnr_val = validation(neuralnet, test_loader)
           list_loss_test.append(loss_val)
           list_psnr_test.append(psnr_val)

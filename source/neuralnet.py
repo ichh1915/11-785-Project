@@ -48,7 +48,7 @@ class SRNET(nn.Module):
 
 
 class FSRCNN(torch.nn.Module):
-    def __init__(self, ngpu, n_channels=3, d=56, s=12, m=4):
+    def __init__(self, ngpu, n_channels=3, d=56, s=12, m=2):
         super(FSRCNN, self).__init__()
 
         self.ngpu = ngpu
