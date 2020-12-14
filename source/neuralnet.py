@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from .car import ResamplerNet
 
 class NeuralNet(object):
 
@@ -15,6 +16,11 @@ class NeuralNet(object):
           self.model = FSRCNN(self.ngpu).to(self.device)
         elif model == 'SRResNet':
           self.model = SRResNet(self.ngpu).to(self.device)
+        elif model == 'car':
+          self.model = ResamplerNet(self.ngpu).to(self.device)
+        else:
+          print("[ERROR] model not defined")
+          return
 
         if (self.device.type == 'cuda') and (self.model.ngpu > 0):
             self.model = nn.DataParallel(self.model, list(range(self.model.ngpu)))
@@ -76,8 +82,8 @@ class FSRCNN(torch.nn.Module):
 
 
         # Deconvolution
-        self.deconvolution = nn.ConvTranspose2d(in_channels=d, out_channels=n_channels, kernel_size=9, stride=1, padding=9//2,
-                                            output_padding=0)
+        self.deconvolution = nn.ConvTranspose2d(in_channels=d, out_channels=n_channels, kernel_size=9, stride=2, padding=9//2,
+                                            output_padding=2//2)
 
     def forward(self, x):
         out = self.extraction(x)
