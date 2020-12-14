@@ -77,25 +77,28 @@ class ResamplerNet(nn.Module):
                         #, DownsampleBlock(dim2, dim2)
         )
 
-        res = [ResBlock(dim2)] * 4
+        res = [ResBlock(dim2)] * 2
         self.res = nn.Sequential(*res)
-        self.ds = DownsampleBlock(dim2, dim3)
+        # self.ds = DownsampleBlock(dim2, dim3)
 
         self.kernel_layer = nn.Sequential(
-                              ConvBlock(dim3, dim3),
-                              ConvBlock(dim3, dim3),
-                              ConvBlock(dim3, dim3),
-                              UpsampleBlock(dim3)
+                              # ConvBlock(dim3, dim3),
+                              # ConvBlock(dim3, dim3),
+                              ConvBlock(dim2, dim2),
+                              UpsampleBlock(dim2)
         )
 
-        self.conv = nn.Conv2d(in_channels=dim3, out_channels=3, kernel_size=1, stride=2, padding=1//2)
+        res2 = [ResBlock(dim2)] * 2
+        self.res2 = nn.Sequential(*res2)
+        self.conv = nn.Conv2d(in_channels=dim2, out_channels=3, kernel_size=3, stride=1, padding=3//2)
 
     def forward(self, x):
         output0 = self.layer1(x)
         output = self.res(output0)
         output = torch.add(output, output0)
-        output = self.ds(output)
+        # output = self.ds(output)
         output = self.kernel_layer(output)
+        output = self.res2(output)
         output = self.conv(output)
 
 
