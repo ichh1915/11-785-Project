@@ -65,10 +65,10 @@ class UpsampleBlock(nn.Module):
 
 
 class ResamplerNet(nn.Module):
-    def __init__(self, ngpu):
+    def __init__(self, ngpu, bicubic):
         super(ResamplerNet, self).__init__()
         self.ngpu = ngpu
-        dim1 = 16
+        dim1 = 32
         dim2 = dim1 * 2
         dim3 = dim2 * 2
         self.layer1 = nn.Sequential(
@@ -90,7 +90,9 @@ class ResamplerNet(nn.Module):
 
         res2 = [ResBlock(dim2)] * 2
         self.res2 = nn.Sequential(*res2)
-        self.conv = nn.Conv2d(in_channels=dim2, out_channels=3, kernel_size=3, stride=1, padding=3//2)
+
+        stride = 1 if not bicubic else 2
+        self.conv = nn.Conv2d(in_channels=dim2, out_channels=3, kernel_size=1, stride=stride, padding=1//2)
 
     def forward(self, x):
         output0 = self.layer1(x)

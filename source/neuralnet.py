@@ -6,18 +6,18 @@ from .car import ResamplerNet
 
 class NeuralNet(object):
 
-    def __init__(self, device, ngpu, model):
+    def __init__(self, device, ngpu, model, bicubic):
 
         self.device, self.ngpu = device, ngpu
 
         if model == 'SRCNN':
           self.model = SRNET(self.ngpu).to(self.device)
         elif model == 'FSRCNN':
-          self.model = FSRCNN(self.ngpu).to(self.device)
+          self.model = FSRCNN(self.ngpu, bicubic).to(self.device)
         elif model == 'SRResNet':
-          self.model = SRResNet(self.ngpu).to(self.device)
+          self.model = SRResNet(self.ngpu, bicubic).to(self.device)
         elif model == 'car':
-          self.model = ResamplerNet(self.ngpu).to(self.device)
+          self.model = ResamplerNet(self.ngpu, bicubic).to(self.device)
         else:
           print("[ERROR] model not defined")
           return
@@ -54,7 +54,7 @@ class SRNET(nn.Module):
 
 
 class FSRCNN(torch.nn.Module):
-    def __init__(self, ngpu, n_channels=3, d=56, s=12, m=2):
+    def __init__(self, ngpu, bicubic, n_channels=3, d=56, s=12, m=2):
         super(FSRCNN, self).__init__()
 
         self.ngpu = ngpu
@@ -82,8 +82,9 @@ class FSRCNN(torch.nn.Module):
 
 
         # Deconvolution
-        self.deconvolution = nn.ConvTranspose2d(in_channels=d, out_channels=n_channels, kernel_size=9, stride=2, padding=9//2,
-                                            output_padding=2//2)
+        stride = 2 if not bicubic else 1
+        self.deconvolution = nn.ConvTranspose2d(in_channels=d, out_channels=n_channels, kernel_size=9, stride=stride, padding=9//2,
+                                            output_padding=stride//2)
 
     def forward(self, x):
         out = self.extraction(x)
@@ -96,7 +97,7 @@ class FSRCNN(torch.nn.Module):
 
 
 class SRResNet(nn.Module):
-    def __init__(self, ngpu, in_channels=3, out_channels=3, B=16):
+    def __init__(self, ngpu, bicubic, in_channels=3, out_channels=3, B=16):
         super(SRResNet, self).__init__()
         self.ngpu = ngpu
         
@@ -115,12 +116,15 @@ class SRResNet(nn.Module):
                 nn.BatchNorm2d(64)
         )
 
+        stride = 2 if not bicubic else 1
+
         self.shuffle = nn.Sequential(
-                        ShuffleBlock(),
-                        ShuffleBlock()
+                        ShuffleBlock(stride),
+                        ShuffleBlock(stride)
         )
 
-        self.conv = nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=9, stride=1, padding=4, bias=False)
+        
+        self.conv = nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=9, stride=stride, padding=4, bias=False)
 
     def forward(self, x):
         output0 = self.input(x)
@@ -154,12 +158,12 @@ class ResidualBlock(nn.Module):
 
 
 class ShuffleBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, factor):
         super(ShuffleBlock, self).__init__()
         
         self.model = nn.Sequential(
-                        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
-                        nn.PixelShuffle(1),
+                        nn.Conv2d(in_channels=64, out_channels=64*factor**2, kernel_size=3, stride=1, padding=1, bias=False),
+                        nn.PixelShuffle(factor),
                         nn.PReLU(num_parameters=1,init=0.2)
         )
         

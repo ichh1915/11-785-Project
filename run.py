@@ -11,10 +11,12 @@ def main():
 
     if(not(torch.cuda.is_available())): FLAGS.ngpu = 0
     device = torch.device("cuda" if (torch.cuda.is_available() and FLAGS.ngpu > 0) else "cpu")
-    srnet = nn.NeuralNet(device=device, ngpu=FLAGS.ngpu, model=FLAGS.model)
+    bicubic = FLAGS.bicubic==1
+    
+    srnet = nn.NeuralNet(device=device, ngpu=FLAGS.ngpu, model=FLAGS.model, bicubic=bicubic)
 
-    train_loader = load_data(bicubic=FLAGS.bicubic==1)
-    test_loader = load_data(train=False, bicubic=FLAGS.bicubic==1)
+    train_loader = load_data(bicubic=bicubic)
+    test_loader = load_data(train=False, bicubic=bicubic)
 
     solver.training(neuralnet=srnet, data_loader=train_loader, test_loader=test_loader, epochs=FLAGS.epoch, batch_size=FLAGS.batch)
     solver.validation(neuralnet=srnet, data_loader=test_loader)
